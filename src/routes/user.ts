@@ -19,7 +19,7 @@ async function validatePassword(password: string, hash: string): Promise<boolean
 
 /**
  * @swagger
- * /signup:
+ * /auth/signup:
  *   post:
  *     summary: Register a new user
  *     description: Creates a new user account and returns a JWT token.
@@ -80,7 +80,7 @@ router.post('/signup', async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /signin:
+ * /auth/signin:
  *   post:
  *     summary: Authenticate a user
  *     description: Validates user credentials and returns a JWT token if successful.

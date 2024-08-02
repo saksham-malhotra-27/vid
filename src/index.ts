@@ -8,6 +8,7 @@ import authHandler from './routes/user'
 const app = express();
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
+
 app.use('/api/videos', videoRoutes);
 app.use('/api/auth', authHandler)
 const swaggerDocs = swaggerJSDoc(swaggerOptions);
