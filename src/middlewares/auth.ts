@@ -11,12 +11,12 @@ interface JwtPayload {
 
 export function isSignedIn(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
-
-    if (!authHeader ) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ msg: "No token provided, authorization denied." });
     }
 
-    const token = authHeader
+    const token = authHeader.split(' ')[1]; // Extract the token part after 'Bearer '
+
 
     try {
         jwt.verify(token, JWT_SECRET, async (err, decoded)=>{

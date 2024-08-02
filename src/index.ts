@@ -13,7 +13,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/auth', authHandler)
 const swaggerDocs = swaggerJSDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs))
-const port = 3000;
+const port = process.env.PORT || 3000;
 app.get('/', ()=>{
     console.log('hi')
     
@@ -21,6 +21,5 @@ app.get('/', ()=>{
 
 
 app.listen(port, ()=>{
-    console.log('listening... ')
-    console.log(port)
+    console.log(`listening...  on ${port}`)
 })

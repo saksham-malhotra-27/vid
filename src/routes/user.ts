@@ -17,6 +17,49 @@ async function validatePassword(password: string, hash: string): Promise<boolean
     return await bcrypt.compare(password, hash);
 }
 
+
+router.post('/signup', async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    try {
+        const hashedPassword = await hashPassword(password);
+        const user = await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword
+            }
+        });
+        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+        const tok =  `bearer ${token}`
+        res.status(201).json({ success: true, message: "User created successfully", data: { token: tok}});
+    } catch (error) {
+        res.status(400).json({ success: false, message: "Error creating user", error: { details: "Error signing up" } });
+    }
+});
+
+router.post('/signin', async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                email: email
+            }
+        });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+        const isValid = await validatePassword(password, user.password);
+        if (!isValid) {
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
+        }
+        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+        const tok =  `bearer ${token}`
+        res.json({ success: true, message: "Login successful", data: { token:tok } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error signing in", error: { details: "Error signing in" } });
+    }
+});
+
+
 /**
  * @swagger
  * /auth/signup:
@@ -37,46 +80,45 @@ async function validatePassword(password: string, hash: string): Promise<boolean
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email of the user.
  *               password:
  *                 type: string
  *                 format: password
- *                 description: Password for the user account.
  *     responses:
  *       201:
- *         description: User created successfully. Returns a JWT token.
+ *         description: User created successfully.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 message:
  *                   type: string
- *                 token:
- *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
  *       400:
  *         description: Error creating user.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     details:
+ *                       type: string
  *       500:
  *         description: Server error.
  */
-
-router.post('/signup', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    try {
-        const hashedPassword = await hashPassword(password);
-        const user = await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword
-            }
-        });
-        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-        res.status(201).json({ message: "User created successfully", token });
-    } catch (error) {
-        res.status(400).json({ message: "Error creating user", error: "Error Sigining Up"});
-    }
-});
-
 
 /**
  * @swagger
@@ -98,53 +140,66 @@ router.post('/signup', async (req: Request, res: Response) => {
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Registered email of the user.
  *               password:
  *                 type: string
  *                 format: password
- *                 description: Password associated with the email.
  *     responses:
  *       200:
- *         description: Login successful. Returns a JWT token.
+ *         description: Login successful.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 message:
  *                   type: string
- *                 token:
- *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
  *       401:
  *         description: Invalid credentials.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  *       404:
  *         description: User not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  *       500:
  *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     details:
+ *                       type: string
  */
 
-
-router.post('/signin', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                email: email
-            }
-        });
-        if (!user) {
-            return res.status(404).send('User not found');
-        }
-        const isValid = await validatePassword(password, user.password);
-        if (!isValid) {
-            return res.status(401).send('Invalid credentials');
-        }
-        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ message: "Login successful", token });
-    } catch (error) {
-        res.status(500).json({ message: "Error signing in", error:  "Error Sigining In" });
-    }
-});
 
 
 

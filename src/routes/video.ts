@@ -39,7 +39,6 @@ router.post('/upload', isSignedIn, (req: Request, res: Response) => {
     if (error instanceof multer.MulterError) {
       return res.status(500).json({ message: error.message });
     } else if (error) {
-      console.log(error)
       return res.status(500).json({ message: "Failed to upload video." });
     }
 
@@ -55,7 +54,6 @@ router.post('/upload', isSignedIn, (req: Request, res: Response) => {
               userId: req.user.id, // Link the video to the logged-in user
             }
           });
-          console.log(video)
     
           return res.status(201).json({ message: "Video uploaded successfully", videoId: video.id });
         } catch (error) {
@@ -162,7 +160,7 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
         return res.status(404).json({ message: "Video not found or access unauthorized." });
     }
 
-    const outputPath = `uploads/trimmed-${Date.now()}-${path.basename(video.filepath)}`;
+    const  outputPath = `uploads/trimmed-${Date.now()}-${path.basename(video.filepath)}`;
 
     ffmpeg(video.filepath)
         .setStartTime(startTime)
@@ -189,9 +187,9 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
 
 
 router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSignedIn, async (req: Request, res: Response) => {
-  const str = req.body.toString('utf-8');
-  const jsonStr = JSON.parse(str);
-  const result = requestSchema.safeParse(jsonStr);
+  const  str = req.body.toString('utf-8');
+  const  jsonStr = JSON.parse(str);
+  const  result = requestSchema.safeParse(jsonStr);
   if (!result.success) {
       return res.status(400).json({ message: "Invalid data provided.", error: result.error });
   }
@@ -215,7 +213,6 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
           const stats = fs.statSync(video.filepath);
           totalSize += stats.size;
       } catch (error) {
-          console.error('Error accessing video file:', error);
           return res.status(500).json({ message: "Failed to access video file.", error: String(error) });
       }
   }
@@ -246,12 +243,9 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
           }
 
           if (error) {
-              console.error(`ffmpeg error: ${error.message}`);
-              console.error(`stderr: ${stderr}`);
               return res.status(500).json({ message: "Failed to merge videos", error: String(error)});
           }
 
-          console.log(`ffmpeg stdout: ${stdout}`);
           
           try {
               const newVideo = await prisma.video.create({
@@ -272,3 +266,211 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
 
 
 export default router
+
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+/**
+ * @swagger
+ * /videos/upload:
+ *   post:
+ *     summary: Upload a video
+ *     description: Allows users to upload a video file. Requires user to be signed in.
+ *     tags: [Video Management]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *                 description: Video file to upload
+ *     responses:
+ *       201:
+ *         description: Video uploaded successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 videoId:
+ *                   type: integer
+ *       400:
+ *         description: No video file provided.
+ *       500:
+ *         description: Failed to upload video or database operation failed.
+ *     security:
+ *       - bearerAuth: []
+ */
+
+/**
+ * @swagger
+ * /videos/myvideos:
+ *   get:
+ *     summary: List all videos of a user
+ *     description: Retrieves all video files uploaded by the signed-in user.
+ *     tags: [Video Management]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved videos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 videos:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       filepath:
+ *                         type: string
+ *       401:
+ *         description: User authentication failed.
+ *       500:
+ *         description: Failed to retrieve videos.
+ *     security:
+ *       - bearerAuth: []
+ */
+
+/**
+ * @swagger
+ * /videos/enable-access/{videoId}:
+ *   post:
+ *     summary: Enable or update access to a video
+ *     description: Grants or updates access to a specified video by generating a new access token.
+ *     tags: [Video Management]
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the video for which access is being enabled or updated
+ *     responses:
+ *       200:
+ *         description: Access enabled or updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                 expiry:
+ *                   type: string
+ *       404:
+ *         description: Video not found or access unauthorized.
+ *       500:
+ *         description: Failed to enable or update access.
+ *     security:
+ *       - bearerAuth: []
+ */
+
+/**
+ * @swagger
+ * /videos/access-video/{token}:
+ *   get:
+ *     summary: Access a video by token
+ *     description: Retrieves the path of a video that is accessed using a valid token.
+ *     tags: [Video Management]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The access token for the video
+ *     responses:
+ *       200:
+ *         description: Video access granted.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 videoPath:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /videos/trim-video:
+ *   post:
+ *     summary: Trim a video
+ *     description: Trims a video between specified start and end times.
+ *     tags: [Video Management]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               videoId:
+ *                 type: integer
+ *               startTime:
+ *                 type: string
+ *               endTime:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Video trimmed successfully.
+ *       404:
+ *         description: Video not found or access unauthorized.
+ *       500:
+ *         description: Failed to trim video.
+ *     security:
+ *       - bearerAuth: []
+ */
+
+/**
+ * @swagger
+ * /videos/merge-videos:
+ *   post:
+ *     summary: Merge multiple videos
+ *     description: Merges multiple videos into one. Requires all video IDs to belong to the user and total size under 25 MB.
+ *     tags: [Video Management]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               vids:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *     responses:
+ *       200:
+ *         description: Videos merged successfully.
+ *       404:
+ *         description: One or more videos not found or access unauthorized.
+ *       413:
+ *         description: Total video size exceeds the permitted limit.
+ *       500:
+ *         description: Failed to merge videos or failed to access video file.
+ *     security:
+ *       - bearerAuth: []
+ */

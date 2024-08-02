@@ -1,6 +1,7 @@
 // src/swagger.ts
 import { OAS3Options } from 'swagger-jsdoc';
 
+const port = process.env.PORT || 3000;
 const swaggerOptions: OAS3Options = {
   definition: {
     openapi: '3.0.0',
@@ -11,7 +12,7 @@ const swaggerOptions: OAS3Options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000/api'
+        url: `http://localhost:${port}/api`
       }
     ]
   },
