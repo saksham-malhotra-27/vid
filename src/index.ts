@@ -20,6 +20,9 @@ app.get('/', ()=>{
 })
 
 
+if(process.env.NODE_ENV !== "test"){
 app.listen(port, ()=>{
     console.log(`listening...  on ${port}`)
 })
+}
+export default app;

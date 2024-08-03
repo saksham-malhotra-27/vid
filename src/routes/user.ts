@@ -2,11 +2,20 @@ import express, { Request, Response } from 'express';
 import prisma from '../utils/db';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
+import z from 'zod'
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'abcdef';
 
+const signupSchema = z.object({
+    email: z.string().email({ message: "Invalid email format" }),
+    password: z.string().min(8, { message: "Password must be at least 8 characters long" })
+});
+
+const signinSchema = z.object({
+    email: z.string().email({ message: "Invalid email format" }),
+    password: z.string()
+});
 
 async function hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -19,45 +28,52 @@ async function validatePassword(password: string, hash: string): Promise<boolean
 
 
 router.post('/signup', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
     try {
-        const hashedPassword = await hashPassword(password);
+        const validatedData = signupSchema.parse(req.body);
+        const hashedPassword = await hashPassword(validatedData.password);
         const user = await prisma.user.create({
             data: {
-                email,
+                email: validatedData.email,
                 password: hashedPassword
             }
         });
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-        const tok =  `bearer ${token}`
-        res.status(201).json({ success: true, message: "User created successfully", data: { token: tok}});
+        res.status(201).json({ success: true, message: "User created successfully", data: { token: `bearer ${token}` }});
     } catch (error) {
-        res.status(400).json({ success: false, message: "Error creating user", error: { details: "Error signing up" } });
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ success: false, message: "Validation failed", errors: error.errors });
+        }
+        console.error("Signup error:", error);
+        res.status(500).json({ success: false, message: "Error creating user", error: String(error) });
     }
 });
 
 router.post('/signin', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
     try {
+        const validatedData = signinSchema.parse(req.body);
         const user = await prisma.user.findUnique({
             where: {
-                email: email
+                email: validatedData.email
             }
         });
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
-        const isValid = await validatePassword(password, user.password);
+        const isValid = await validatePassword(validatedData.password, user.password);
         if (!isValid) {
             return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
         const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-        const tok =  `bearer ${token}`
-        res.json({ success: true, message: "Login successful", data: { token:tok } });
+        res.json({ success: true, message: "Login successful", data: { token: `bearer ${token}` } });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error signing in", error: { details: "Error signing in" } });
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ success: false, message: "Validation failed", errors: error.errors });
+        }
+        console.error("Signin error:", error);
+        res.status(500).json({ success: false, message: "Error signing in", error: String(error) });
     }
 });
+
 
 
 /**
