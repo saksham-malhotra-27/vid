@@ -31,6 +31,11 @@ To run tests, ensure the production environment is set to "test" in your .env fi
 Execute the tests using the following command:
 `npm run test`
 
+## Assumptions
+- Each user must sign in or sign up before accessing any features.
+- Once logged in, users can upload videos, view their own videos, create access points for their private videos via links with expiry times, merge videos, or trim them.
+- Users must include a bearer authorization token in the headers for authentication.
+
 ## Resources Used
 
 - [Got to know about ffmpeg with Node.js](https://medium.com/nerd-for-tech/writing-a-video-encoder-using-node-js-and-ffmpeg-b909442472a9)
