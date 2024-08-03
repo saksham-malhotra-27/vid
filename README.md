@@ -1,4 +1,5 @@
 # Node.Js Video Editor
+![Screenshot 2024-08-03 081601](https://github.com/user-attachments/assets/1b7b9024-b7d4-4694-8dd9-1a03297952f5)
 
 ## Installation
 
