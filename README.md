@@ -24,9 +24,18 @@
 5. Finally, access the Swagger API documentation at:
 `http://localhost:<PORT>/api-docs`, where PORT is by default 3000 or the Port Number you had used in .env 
 
-### Running Tests
+## Running Tests
 To run tests, ensure the production environment is set to "test" in your .env file:
 `NODE_ENV="test"`
 
 Execute the tests using the following command:
 `npm run test`
+
+## Resources Used
+
+- [Got to know about ffmpeg with Node.js](https://medium.com/nerd-for-tech/writing-a-video-encoder-using-node-js-and-ffmpeg-b909442472a9)
+- [Got to know about conversions](https://medium.com/@kusalkalingainfo/convert-audio-files-using-fluent-ffmpeg-library-86aeb3c1b6b7)
+- [Youtube: Swagger Guide ](https://www.youtube.com/watch?v=dhMlXoTD3mQ&t=256s)
+- [YouTube: Fluent-FFmpeg Guide](https://www.youtube.com/watch?v=hq6KdY-76z8)
+- [Vitest Setup with Serverless Framework & Node.js](https://awstip.com/vitest-setup-with-serverless-framework-node-js-express-js-af75bdcbaef8)
+
