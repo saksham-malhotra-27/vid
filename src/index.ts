@@ -26,4 +26,7 @@ app.listen(port, ()=>{
     console.log(`listening...  on ${port}`)
 })
 }
+else {
+    console.log("IF YOU WANT TO RUN IN DEV MODE, THEN SET NODE_ENV TO dev IN .ENV")
+}
 export default app;
