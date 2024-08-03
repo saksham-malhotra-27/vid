@@ -20,6 +20,7 @@ app.get('/', ()=>{
 })
 
 
+// set NODE_ENV to something else to run on dev mode
 if(process.env.NODE_ENV !== "test"){
 app.listen(port, ()=>{
     console.log(`listening...  on ${port}`)
