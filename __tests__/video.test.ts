@@ -20,10 +20,12 @@ interface FfmpegCommand {
 
 
 
-declare module 'express'  {
-  interface Request {
-    user?: User;
-    file?: Express.Multer.File;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+      file?: Express.Multer.File;
+    }
   }
 }
 

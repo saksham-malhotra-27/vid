@@ -214,7 +214,6 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
   if (!result.success) {
       return res.status(400).json({ message: "Invalid data provided.", error: result.error });
   }
-  console.log('yayyyyyyyyyyyyyyyyyyy')
 
   const videoObjects = result.data.vids;
   const userId = req.user?.id; 

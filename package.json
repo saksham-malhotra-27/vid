@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest --verbose",
     "build": "tsc",
     "start": "node dist/index.js",
     "watch": "tsc -w",
     "video":"jest __tests__/video.test.ts ",
-    "dev": "nodemon dest/index.js"
+    "dev": "concurrently \"tsc -w\" \"nodemon dest/index.js\""
   },
   "keywords": [],
   "author": "",
