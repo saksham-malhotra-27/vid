@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "vitest",
+    "test": "jest",
     "build": "tsc",
     "start": "node dist/index.js",
     "watch": "tsc -w",
-    "dev": "concurrently \"tsc -w\" \"nodemon dest/index.js\""
+    "video":"jest __tests__/video.test.ts ",
+    "dev": "nodemon dest/index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,10 +16,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^5.17.0",
-    "@types/bcrypt": "^5.0.2",
     "@types/node": "^22.0.2",
-    "@types/supertest": "^6.0.2",
-    "bcrypt": "^5.1.1",
     "concurrently": "^8.2.2",
     "crypto": "^1.0.1",
     "express": "^4.19.2",
@@ -26,20 +24,25 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.1.4",
-    "supertest": "^7.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "typescript": "^5.5.4",
-    "vitest": "^2.0.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^4.17.21",
     "@types/fluent-ffmpeg": "^2.1.25",
+    "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/multer": "^1.4.11",
+    "@types/supertest": "^6.0.2",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
-    "prisma": "^5.17.0"
+    "bcrypt": "^5.1.1",
+    "jest": "^29.7.0",
+    "prisma": "^5.17.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.4"
   }
 }

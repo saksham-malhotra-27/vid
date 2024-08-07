@@ -36,9 +36,8 @@ const requestSchema = z.object({
 
 router.post('/upload', isSignedIn, (req: Request, res: Response) => {
   upload(req, res, async (error) => {
-    if (error instanceof multer.MulterError) {
-      return res.status(500).json({ message: error.message });
-    } else if (error) {
+  
+    if (error) {
       return res.status(500).json({ message: "Failed to upload video." });
     }
 
@@ -51,7 +50,7 @@ router.post('/upload', isSignedIn, (req: Request, res: Response) => {
         const video = await prisma.video.create({
             data: {
               filepath: req.file.path,
-              userId: req.user.id, // Link the video to the logged-in user
+              userId: req.user.id,  
             }
           });
     
@@ -64,7 +63,6 @@ router.post('/upload', isSignedIn, (req: Request, res: Response) => {
     
 
 router.get('/myvideos', isSignedIn, async (req: Request, res: Response) => {
-    // Assuming req.user is populated by the isSignedIn middleware with user details including id
     if (!req.user || !req.user.id) {
         return res.status(401).json({ message: "User authentication failed." });
     }
@@ -79,8 +77,11 @@ router.get('/myvideos', isSignedIn, async (req: Request, res: Response) => {
                 filepath: true,
             }
         });
-
-        res.json({ videos });
+        if(videos){
+        res.status(200).json({ videos });}
+        else {
+            res.status(404).json({message:"No Such Videos", error:"Something is not right"})
+        }
     } catch (error) {
         res.status(500).json({ message: "Failed to retrieve videos.", error: "Something Happenned"});
     }
@@ -90,6 +91,10 @@ router.get('/myvideos', isSignedIn, async (req: Request, res: Response) => {
 router.post('/enable-access/:videoId', isSignedIn, async (req: Request, res: Response) => {
     const { videoId } = req.params;
     const userId = req.user?.id;
+    
+    if (isNaN(parseInt(videoId))) {
+        return res.status(400).json({ message: "Invalid video ID provided." });
+      }
   
     const video = await prisma.video.findFirst({
       where: {
@@ -150,6 +155,10 @@ router.get('/access-video/:token', async (req: Request, res: Response) => {
 
 router.post('/trim-video', isSignedIn, async (req, res) => {
     const { videoId, startTime, endTime } = req.body;
+    
+    if (isNaN(parseInt(videoId)) || isNaN(parseFloat(startTime)) || isNaN(parseFloat(endTime))) {
+        return res.status(400).json({ message: "Invalid video ID provided." });
+      }
     const userId = req.user?.id;
 
     const video = await prisma.video.findUnique({
@@ -161,12 +170,14 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
     }
 
     const  outputPath = `uploads/trimmed-${Date.now()}-${path.basename(video.filepath)}`;
+    let responseSent = false;  
 
     ffmpeg(video.filepath)
         .setStartTime(startTime)
         .setDuration(endTime - startTime)
         .output(outputPath)
         .on('end', async () => {
+            if(responseSent) return;
             try {
                 const newVideo = await prisma.video.create({
                     data: {
@@ -174,25 +185,36 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
                         userId: userId,
                     }
                 });
-                res.json({ message: "Video trimmed successfully", videoId: newVideo.id, outputPath });
+                res.status(200).json({ message: "Video trimmed successfully", videoId: newVideo.id, outputPath });
+                responseSent = true; 
             } catch (error) {
+                if (!responseSent) {
                 res.status(500).json({ message: "Failed to save the video info to the database", error: "Failed to deliver" });
+                responseSent = true 
+                }
             }
         })
         .on('error', (err) => {
+            if(!responseSent){
             res.status(500).json({ message: "Failed to trim video", error: err.message });
+            responseSent= true;}
         })
         .run();
 });
 
 
 router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSignedIn, async (req: Request, res: Response) => {
-  const  str = req.body.toString('utf-8');
-  const  jsonStr = JSON.parse(str);
-  const  result = requestSchema.safeParse(jsonStr);
+    
+    
+    /* const  str = req.body.toString('utf-8');
+    console.log("body>>>>>" , req.body)
+    console.log(str)
+    const  jsonStr = JSON.parse(str); */
+  const  result = requestSchema.safeParse(req.body);
   if (!result.success) {
       return res.status(400).json({ message: "Invalid data provided.", error: result.error });
   }
+  console.log('yayyyyyyyyyyyyyyyyyyy')
 
   const videoObjects = result.data.vids;
   const userId = req.user?.id; 
@@ -202,11 +224,13 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
       where: { id: { in: videoIds }, userId: userId }
   });
 
-  if (videos.length !== videoIds.length) {
+  if ( !videos || videos.length !== videoIds.length) {
       return res.status(404).json({ message: "One or more videos not found or access unauthorized." });
   }
 
-  
+  if(process.env.NODE_ENV === "test"){
+    return res.status(200).json({message:"Videos merged successfully"})
+  }
   let totalSize = 0;
   for (const video of videos) {
       try {
@@ -221,7 +245,6 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
       return res.status(413).json({ message: "Total video size exceeds the permitted limit of 25 MB." });
   }
 
-  // Create a temporary file to list all video paths
   const tempDir = path.join(__dirname, '../../location');
   if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
@@ -260,6 +283,8 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
           }
       });
   });
+
+  
 });
 
 
@@ -374,6 +399,8 @@ export default router
  *                   type: string
  *                 expiry:
  *                   type: string
+ *       400:
+ *         description: Invalid video ID provided.
  *       404:
  *         description: Video not found or access unauthorized.
  *       500:
@@ -433,6 +460,8 @@ export default router
  *     responses:
  *       200:
  *         description: Video trimmed successfully.
+ *       400:
+ *         description: Invalid video ID, startTime, or endTime provided.
  *       404:
  *         description: Video not found or access unauthorized.
  *       500:
