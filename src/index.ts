@@ -4,6 +4,8 @@ import swaggerUi from 'swagger-ui-express'
 import swaggerOptions from "./swagger";
 import videoRoutes from './routes/video';
 import authHandler from './routes/user'
+import dotenv from "dotenv";
+dotenv.config()
 
 const app = express();
 app.use(express.json())
