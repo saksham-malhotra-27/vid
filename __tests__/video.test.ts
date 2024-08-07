@@ -29,9 +29,6 @@ declare module 'express'  {
 
 
 
-
-
-
 jest.mock('../src/middlewares/auth', () => ({
   isSignedIn: (req: Request, res: Response, next: NextFunction) => {
     if(simulateUser){
