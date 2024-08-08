@@ -171,7 +171,7 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
 
     const  outputPath = `uploads/trimmed-${Date.now()}-${path.basename(video.filepath)}`;
     let responseSent = false;  
-
+    const basepath = path.join(__dirname, '../..', outputPath)
     ffmpeg(video.filepath)
         .setStartTime(startTime)
         .setDuration(endTime - startTime)
@@ -179,13 +179,14 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
         .on('end', async () => {
             if(responseSent) return;
             try {
+             
                 const newVideo = await prisma.video.create({
                     data: {
-                        filepath: outputPath,
+                        filepath: basepath,
                         userId: userId,
                     }
                 });
-                res.status(200).json({ message: "Video trimmed successfully", videoId: newVideo.id, outputPath });
+                res.status(200).json({ message: "Video trimmed successfully", videoId: newVideo.id, outputPath: basepath });
                 responseSent = true; 
             } catch (error) {
                 if (!responseSent) {
@@ -203,13 +204,8 @@ router.post('/trim-video', isSignedIn, async (req, res) => {
 });
 
 
-router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSignedIn, async (req: Request, res: Response) => {
+router.post('/merge-videos', isSignedIn, async (req: Request, res: Response) => {
     
-    
-    /* const  str = req.body.toString('utf-8');
-    console.log("body>>>>>" , req.body)
-    console.log(str)
-    const  jsonStr = JSON.parse(str); */
   const  result = requestSchema.safeParse(req.body);
   if (!result.success) {
       return res.status(400).json({ message: "Invalid data provided.", error: result.error });
@@ -252,13 +248,10 @@ router.post('/merge-videos', express.raw({ type: '*/*', limit: '2mb' }), isSigne
   const fileContent = videos.map(video => `file '${video.filepath}'`).join('\n');
   fs.writeFileSync(listFilePath, fileContent);
 
-  // Path for the output merged video
   const outputFilePath = path.join(__dirname, `../../uploads/merged-${Date.now()}.mp4`);
 
-  // Execute ffmpeg to merge videos
   const command = `ffmpeg -safe 0 -f concat -i "${listFilePath}" -c copy "${outputFilePath}"`;
-  exec(command, async (error, stdout, stderr) => {
-      // Delete the temporary file regardless of the ffmpeg command result
+  exec(command, async (error) => {
       fs.unlink(listFilePath, async (unlinkErr) => {
           if (unlinkErr) {
               console.error('Error deleting the temporary list file:', unlinkErr.message);
@@ -300,6 +293,24 @@ export default router
  *       scheme: bearer
  *       bearerFormat: JWT
  */
+
+/** 
+ * @swagger
+ *  components:
+ *    responses:
+ *      BadRequest:
+ *        description: Invalid JSON payload
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                message:
+ *                  type: string
+ *                error:
+ *                  type: string
+ */
+
 /**
  * @swagger
  * /videos/upload:
@@ -493,6 +504,8 @@ export default router
  *     responses:
  *       200:
  *         description: Videos merged successfully.
+ *       400:
+ *          $ref: '#/components/responses/BadRequest'
  *       404:
  *         description: One or more videos not found or access unauthorized.
  *       413:

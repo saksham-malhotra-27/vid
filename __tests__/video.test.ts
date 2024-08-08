@@ -121,8 +121,8 @@ jest.mock('multer', () => {
         next();
       } else {
         const mockStream = new Readable();
-        mockStream.push('fake file content'); // Simulate file content
-        mockStream.push(null); // Indicate the end of the stream
+        mockStream.push('fake file content'); 
+        mockStream.push(null);
 
         req.file = {
           fieldname: 'video',
@@ -189,7 +189,6 @@ jest.mock('fluent-ffmpeg', () => {
 });
 
 
-// Test file
 describe('Video Management', () => {
   describe('POST /api/videos/upload', () => {
     it('should upload a video and save record', async () => {

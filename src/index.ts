@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from 'swagger-ui-express'
 import swaggerOptions from "./swagger";
@@ -10,6 +10,15 @@ dotenv.config()
 const app = express();
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err && err.type === 'entity.parse.failed') {
+      return res.status(400).json({ message: "Invalid JSON payload", error: err.message });
+    }
+    next();
+  });
+  
+
 
 app.use('/api/videos', videoRoutes);
 app.use('/api/auth', authHandler)
